@@ -6,13 +6,15 @@ Select if you want to convert this model into a TABLES or MATERIALIZED VIEW
 
 {{ config(materialized='table') }}
 
-WITH CTE AS (
+WITH DATE_CTE AS (
     select
     
     TO_TIMESTAMP(STARTED_AT) AS STARTED_AT,
     DATE(TO_TIMESTAMP(STARTED_AT)) AS DATE_STARTED_AT,
     HOUR(TO_TIMESTAMP(STARTED_AT)) AS HOUR_STARTED_AT,
 
+/*
+    -- do this if used only once
     CASE
     WHEN DAYNAME(TO_TIMESTAMP(STARTED_AT)) IN ('Sat','Sun')
     THEN 'WEEKEND'
@@ -20,6 +22,7 @@ WITH CTE AS (
     END
     AS DAY_TYPE,
 
+    -- do this if used only once
     CASE
     WHEN MONTH(TO_TIMESTAMP(STARTED_AT)) IN (12,1,2)
     THEN 'WINTER'
@@ -30,12 +33,18 @@ WITH CTE AS (
     ELSE 'AUTUMN'
     END
     AS STATION_OF_YEAR,
+*/
+
+    -- Now, if used several times, create a macro and use it when needed
+    
+    {{day_type('STARTED_AT')}} AS DAY_TYPE,
+    {{get_season('STARTED_AT')}} AS STATION_OF_YEAR,
     
     from
     {{ source('demo', 'bike') }}
     where STARTED_AT != 'started_at'
-    --limit 5 -- to preview
+    -- limit 5 -- to preview
 )
 
 SELECT *
-FROM CTE
+FROM DATE_CTE
